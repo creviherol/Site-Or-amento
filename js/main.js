@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
       descontos: {},
       special: 'janela4',
       needsPuxador: false,
-      bateItem: '571-BateFecha'
+      bateItem: '570-BateFecha'
     },
   
     // Porta de correr 4 folhas: igual à janela 4, mas bateItem = Kit09
@@ -622,6 +622,29 @@ document.addEventListener('DOMContentLoaded', () => {
     exportBtn.addEventListener('click', () => {
       const container = document.querySelector('.container.card') || document.body;
       const clone = container.cloneNode(true);
+
+      // antes de manipular o clone, copiar valores atuais de inputs/selects
+      const originalInputs = container.querySelectorAll('input');
+      const cloneInputs = clone.querySelectorAll('input');
+      cloneInputs.forEach((inputClone, idx) => {
+        if (!originalInputs[idx]) return;
+        inputClone.value = originalInputs[idx].value;
+      });
+
+      const originalSelects = container.querySelectorAll('select');
+      const cloneSelects = clone.querySelectorAll('select');
+      cloneSelects.forEach((selectClone, idx) => {
+        if (!originalSelects[idx]) return;
+        const currentValue = originalSelects[idx].value;
+        selectClone.value = currentValue;
+        Array.from(selectClone.options || []).forEach(opt => {
+          if (opt.value === currentValue) {
+            opt.selected = true;
+          } else {
+            opt.selected = false;
+          }
+        });
+      });
 
       // remover controles interativos (mantém selects/inputs das linhas)
       clone.querySelectorAll('.controls, .form-group, #addBtn, #clearBtn, #addAdditionalItemBtn, #exportPdfBtn').forEach(n => n.remove());
