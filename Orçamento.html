@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento de Vidros</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+<body>
+  <div class="container card">
+    <h1>Orçamento de Vidros</h1>
+    <div class="form-group controls">
+      <label for="pecaSelect">Selecione a Peça:</label>
+      <select id="pecaSelect">
+        <option value="Porta pivotante">Porta pivotante</option>
+        <option value="Janela 2 folhas">Janela 2 folhas</option>
+        <option value="Porta de correr 2 folhas">Porta de correr 2 folhas</option>
+        <option value="Janela 4 folhas">Janela 4 folhas</option>
+        <option value="Porta de correr 4 folhas">Porta de correr 4 folhas</option>
+        <option value="Janela Maxiar/1Fx">Janela Maxiar/1Fx</option>
+        <!-- futuras peças -->
+      </select>
+
+      <label for="qtdDefault">Quantidade:</label>
+      <input type="number" id="qtdDefault" min="1" value="1">
+
+      <!-- WRAPPER para controlar visibilidade do rótulo+select de puxador -->
+      <span id="puxadorWrapper">
+        <label for="puxadorSelect">Tipo de Puxador:</label>
+        <select id="puxadorSelect">
+          <option value="Puxador 1 furo 607">Puxador 1 furo 607</option>
+          <option value="Puxador 2 furos 30/40 Tubular">Puxador 2 furos 30/40 Tubular</option>
+          <option value="Puxador 2 furos 30/40 Reto">Puxador 2 furos 30/40 Reto</option>
+        </select>
+      </span> 
+    </div>
+    <button id="addBtn">Adicionar Peça</button>
+    <button id="clearBtn">Limpar Todas as Peças</button>
+    <button id="exportPdfBtn" class="ghost">Exportar para PDF</button>
+
+    <h2>Itens Selecionados</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Qtd</th>
+          <th>Largura</th> <!-- removido (mm) -->
+          <th>Altura</th>  <!-- removido (mm) -->
+          <th>Cor</th>     <!-- Cor do Vidro -> Cor -->
+          <th>Espessura</th> <!-- Espessura do Vidro -> Espessura -->
+          <th class="col-area">Área</th> <!-- manteve, adicionada classe -->
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="itemsTbody">
+        <!-- Linhas de itens serão adicionadas aqui pelo JavaScript -->
+      </tbody    >
+    </table>
+
+    <h2>Totais</h2>
+    <div>
+      Área Total: <span id="totalArea">0.000</span> m²
+    </div>
+    <div>
+      Quantidade Total: <span id="totalCount">0</span>
+    </div>
+
+    <h2>Itens Adicionais</h2>
+
+    <div class="form-group">
+      <label for="additionalItemName">Nome do item (digite para criar item personalizado):</label>
+      <input type="text" id="additionalItemName" placeholder="Ex: Cantoneira 30x30">
+    </div>
+
+    <div class="form-group">
+      <label for="additionalItemSelect">Ou selecione um item pronto:</label>
+      <select id="additionalItemSelect">
+        <option value="Kit-01">Kit-01</option>
+        <option value="Puxador 1 furo 607">Puxador 1 furo 607</option>
+        <option value="Puxador 2 furos 30/40 Tubular">Puxador 2 furos 30/40 Tubular</option>
+        <option value="Puxador 2 furos 30/40 Reto">Puxador 2 furos 30/40 Reto</option>
+        <option value="BX064">BX064</option>
+        <option value="BX065">BX065</option>
+        <option value="BX057">BX057</option>
+        <option value="AL15">AL15</option>
+        <option value="BX060">BX060</option>
+        <option value="BX061">BX061</option>
+        <option value="U1108">U1108</option>
+        <option value="U1109">U1109</option>
+        <option value="125REG">125REG</option>
+        <option value="Batente inferior">Batente inferior</option>
+        <option value="Cunha">Cunha</option>
+        <option value="SILOC">SILOC</option>
+        <option value="570-BateFecha">570-BateFecha</option>
+        <option value="571-BateFecha">571-BateFecha</option>
+        <option value="Kit10">Kit10</option>
+        <option value="Kit09">Kit09</option>
+        <option value="KitMAXIAR">KitMAXIAR</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="additionalItemQty">Quantidade:</label>
+      <input type="number" id="additionalItemQty" min="1" value="1">
+    </div>
+    <button id="addAdditionalItemBtn">Adicionar Item Adicional</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Qtd</th>
+          <th>Usado</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="additionalItemsTbody">
+        <!-- Linhas de itens adicionais serão adicionadas aqui pelo JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Inline script removido — toda a lógica agora está em js/main.js -->
+  <!-- incluir biblioteca html2pdf (CDN) antes do seu main.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  </body>
+</html>

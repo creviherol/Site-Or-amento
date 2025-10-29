@@ -1,0 +1,17 @@
+{
+  "name": "site-orcamento",
+  "version": "1.0.0",
+  "description": "A budget application for managing items and calculations.",
+  "main": "js/main.js",
+  "scripts": {
+    "start": "live-server .",
+    "build": "echo 'Build step not defined'",
+    "test": "echo 'No tests defined'"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

@@ -1,0 +1,56 @@
+body { font-family: Inter, "Segoe UI", Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 28px; color: #222; }
+.card { max-width: 900px; margin: 0 auto; background: #fff; padding: 22px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06); }
+h1 { color: #0b63d6; margin-top: 0; }
+.controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+select, input[type="number"], button { padding: 10px 12px; border-radius: 8px; border: 1px solid #d0d7de; font-size: 14px; }
+button { background: #0b63d6; color: white; border: none; cursor: pointer; }
+button.ghost { background: transparent; color: #0b63d6; border: 1px solid #0b63d6; }
+table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+th { color: #555; font-weight: 600; }
+.tiny { font-size: 13px; color: #666; }
+.right { text-align: right; }
+.subrow { background: #fafafa; font-size: 13px; color: #444; }
+.subrow td:first-child { padding-left: 30px; font-style: italic; }
+.arred-info { color: #888; font-size: 12px; text-align: center; }
+input[type="number"] { width: 80px; }
+.remove-btn { background: #ef4444; padding: 6px 10px; border-radius: 6px; color: white; border: none; cursor: pointer; }
+@media (max-width: 700px) { .controls { flex-direction: column; align-items: stretch; } }
+@media print {
+  .controls, button, .remove-btn { display: none !important; }
+  .card { box-shadow: none; border-radius: 0; background: #fff; }
+  body { background: #fff; padding: 0; }
+}
+
+/* compact PDF styles — aplicado apenas ao clone antes de gerar PDF */
+.pdf-compact { max-width: 750px; font-size: 12px; line-height: 1.15; }
+.pdf-compact .card { padding: 10px; box-shadow: none; border-radius: 4px; }
+.pdf-compact h1 { font-size: 18px; margin-bottom: 8px; }
+.pdf-compact h2 { font-size: 14px; margin-top: 10px; margin-bottom: 6px; }
+
+/* make tables tighter and prevent cells from expanding horizontally */
+.pdf-compact table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: inherit; }
+.pdf-compact thead th, .pdf-compact tbody td { padding: 6px 8px; vertical-align: middle; }
+
+/* Garantir que a coluna de Área quebre/mostre o conteúdo no PDF */
+.pdf-compact .col-area,
+.pdf-compact td.area {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  min-width: 80px;
+}
+
+/* manter as outras colunas compactas, mas permitir que área expanda um pouco */
+.pdf-compact td, .pdf-compact th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* allow header to repeat on page breaks */
+.pdf-compact thead { display: table-header-group; }
+.pdf-compact tfoot { display: table-footer-group; }
+
+/* reduce spacing of controls/labels if accidentally left (should be removed by JS) */
+.pdf-compact .controls, .pdf-compact .form-group, .pdf-compact button { display: none !important; }
