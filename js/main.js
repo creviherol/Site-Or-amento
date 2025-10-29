@@ -177,21 +177,37 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Gerenciamento de Itens Adicionais com coluna "Usado" (barras de 6m) ---
   function ensureAdditional(name) {
     if (!additionalItems[name]) {
-      additionalItems[name] = { id: uid(), qty: 0, usedMm: 0, isBar: BAR_ITEMS.has(name) };
+      additionalItems[name] = {
+        id: uid(),
+        qty: 0,
+        usedMm: 0,
+        isBar: BAR_ITEMS.has(name),
+        raw: 0
+      };
     }
     return additionalItems[name];
   }
   
-  // deltaQty: change in simple unit qty (units), deltaUsedMm: change in mm for bar items
-  function addOrUpdateAdditionalItem(name, deltaQty = 0, deltaUsedMm = 0) {
-    if (!name || (deltaQty === 0 && deltaUsedMm === 0)) return;
+  // deltaQty: change in simple unit qty (units), deltaUsedMm: change in mm for bar items, deltaRaw: auxilia itens calculados (ex.: SILOC)
+  function addOrUpdateAdditionalItem(name, deltaQty = 0, deltaUsedMm = 0, deltaRaw = 0) {
+    if (!name || (deltaQty === 0 && deltaUsedMm === 0 && deltaRaw === 0)) return;
     const obj = ensureAdditional(name);
-    obj.qty = (obj.qty || 0) + (deltaQty || 0);
+    if (name === 'SILOC') {
+      const delta = deltaRaw !== 0 ? deltaRaw : deltaQty;
+      obj.raw = (obj.raw || 0) + (delta || 0);
+      if (obj.raw < 0) obj.raw = 0;
+      obj.qty = Math.ceil(obj.raw || 0);
+    } else {
+      obj.qty = (obj.qty || 0) + (deltaQty || 0);
+    }
     if (BAR_ITEMS.has(name)) {
       obj.usedMm = (obj.usedMm || 0) + (deltaUsedMm || 0);
     }
     // if both zero or negative remove
-    if ((obj.qty <= 0 || isNaN(obj.qty)) && (!obj.usedMm || obj.usedMm <= 0)) {
+    const shouldRemove = name === 'SILOC'
+      ? (((obj.raw || 0) <= 0) || isNaN(obj.raw))
+      : ((obj.qty <= 0 || isNaN(obj.qty)) && (!obj.usedMm || obj.usedMm <= 0));
+    if (shouldRemove) {
       delete additionalItems[name];
     }
     renderAdditionalTable();
@@ -240,7 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Qtd: para isBar mostra número de barras (não editável), senão mostra input de quantidade
       const qtdCell = isBar
         ? `<td class="qtd-cell">${bars}</td>`
-        : `<td><input type="number" min="0" step="1" value="${obj.qty||0}" data-name="${name}" class="qty-input" style="width:80px;"></td>`;
+        : (name === 'SILOC'
+          ? `<td class="qtd-cell">${obj.qty || 0}</td>`
+          : `<td><input type="number" min="0" step="1" value="${obj.qty||0}" data-name="${name}" class="qty-input" style="width:80px;"></td>`);
   
       // Usado:
       let usadoCell = '';
@@ -249,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         usadoCell = `<td><input type="number" min="0" step="1" value="${usadoVal}" data-name="${name}" class="usado-input" style="width:100px;"></td>`;
       } else {
         if (name === 'SILOC') {
-          const silocRaw = computeSilocRaw();
+          const silocRaw = (obj.raw != null) ? obj.raw : computeSilocRaw();
           usadoCell = `<td>${silocRaw.toFixed(2)}</td>`;
         } else {
           usadoCell = `<td></td>`;
@@ -292,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   
-  // --- Computa contribuições de componentes para um item (retorna map name->{qty, usedMm}) ---
+  // --- Computa contribuições de componentes para um item (retorna map name->{qty, usedMm, raw}) ---
   function computeComponentContribsForItem(item) {
     const conf = pecaConfig[item.nome];
     const contribs = {};
@@ -344,10 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const bateName = conf.bateItem || '571-BateFecha';
       contribs[bateName] = { qty: 1 * qtd, usedMm: 0 };
   
-      // SILOC: area da peça (m²) / 3.4 arredondado pra cima (total across qtd)
+      // SILOC: acumula área total / 3.4 (arredondamento aplicado somente no somatório final)
       const areaPerPiece = (vaoL/1000) * (vaoA/1000);
-      const silocTotal = Math.ceil((areaPerPiece * qtd) / 3.4);
-      contribs['SILOC'] = { qty: silocTotal, usedMm: 0 };
+      const silocRawTotal = (areaPerPiece * qtd) / 3.4;
+      contribs['SILOC'] = { qty: 0, usedMm: 0, raw: silocRawTotal };
   
       return contribs;
     }
@@ -375,11 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // KitMAXIAR: 1 por janela
       contribs['KitMAXIAR'] = { qty: 1 * qtd, usedMm: 0 };
       
-      // SILOC: area da folha fixa (m²) / 3.4 arredondado pra cima
+      // SILOC: area da folha fixa (m²) / 3.4 (arredondamento apenas no total acumulado)
       if (folhaFixa) {
         const areaFixa = (folhaFixa.larguraMm/1000) * (folhaFixa.alturaMm/1000);
-        const silocTotal = Math.ceil((areaFixa * qtd) / 3.4);
-        contribs['SILOC'] = { qty: silocTotal, usedMm: 0 };
+        contribs['SILOC'] = { qty: 0, usedMm: 0, raw: (areaFixa * qtd) / 3.4 };
       }
       
       return contribs;
@@ -393,16 +410,17 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateItemComponents(item) {
     const old = item.componentContribs || {};
     const now = computeComponentContribsForItem(item);
-  
+
     // union of keys
     const keys = new Set([...Object.keys(old), ...Object.keys(now)]);
     keys.forEach(name => {
-      const o = old[name] || { qty: 0, usedMm: 0 };
-      const n = now[name] || { qty: 0, usedMm: 0 };
+      const o = old[name] || { qty: 0, usedMm: 0, raw: 0 };
+      const n = now[name] || { qty: 0, usedMm: 0, raw: 0 };
       const deltaQty = (n.qty || 0) - (o.qty || 0);
       const deltaUsedMm = (n.usedMm || 0) - (o.usedMm || 0);
+      const deltaRaw = (n.raw || 0) - (o.raw || 0);
       // apply delta
-      addOrUpdateAdditionalItem(name, deltaQty, deltaUsedMm);
+      addOrUpdateAdditionalItem(name, deltaQty, deltaUsedMm, deltaRaw);
     });
   
     // store current contribs
@@ -516,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (const name in old) {
         const o = old[name];
         // subtrair
-        addOrUpdateAdditionalItem(name, - (o.qty || 0), - (o.usedMm || 0));
+        addOrUpdateAdditionalItem(name, - (o.qty || 0), - (o.usedMm || 0), - (o.raw || 0));
       }
       let n = main.nextSibling;
       while (n && n.classList.contains('subrow')) { let t = n.nextSibling; n.remove(); n = t; }
