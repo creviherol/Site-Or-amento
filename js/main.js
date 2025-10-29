@@ -352,8 +352,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // 125REG: assume-se 2 por folha móvel (2 * movCount per piece)
       contribs['125REG'] = { qty: 2 * movCount * qtd, usedMm: 0 };
   
-      // Batente inferior: 1 por janela
-      contribs['Batente inferior'] = { qty: 1 * qtd, usedMm: 0 };
+      // Batente inferior: 2 por peça nas configurações de 4 folhas, 1 caso contrário
+      const batenteInferiorQty = (is4 ? 2 : 1) * qtd;
+      contribs['Batente inferior'] = { qty: batenteInferiorQty, usedMm: 0 };
+
+      // Batente central: 1 por peça apenas para configurações de 4 folhas
+      if (is4) {
+        contribs['Batente central'] = { qty: 1 * qtd, usedMm: 0 };
+      }
   
       // Cunha: 1 por folha (total folhas = movCount + fixaCount)
       contribs['Cunha'] = { qty: (movCount + fixaCount) * qtd, usedMm: 0 };
