@@ -427,6 +427,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const inpLarg = main.querySelector('td:nth-child(3) input');
     const inpAlt = main.querySelector('td:nth-child(4) input');
     const areaCell = main.querySelector('.area');
+    const selectCor = main.querySelector('td:nth-child(5) select');
+    const selectEspessura = main.querySelector('td:nth-child(6) select');
+  
+    // Guardar valores iniciais
+    item.cor = item.cor || coresVidro[0];
+    item.espessura = item.espessura || espessurasVidro[0];
+  
+    // Setar valores iniciais nos selects
+    selectCor.value = item.cor;
+    selectEspessura.value = item.espessura;
+  
+    // Atualizar o item quando mudar
+    selectCor.addEventListener('change', () => {
+        item.cor = selectCor.value;
+    });
+    selectEspessura.addEventListener('change', () => {
+        item.espessura = selectEspessura.value;
+    });
   
     function atualizarSubLinhas() {
       let totalAreaItem = 0;
@@ -553,16 +571,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const conf = pecaConfig[nome];
     const folhas = {};
     for (const t in conf.folhas) {
-      folhas[t] = { count: conf.folhas[t].count * qtd, baseCount: conf.folhas[t].count, larguraMm: 0, alturaMm: 0, manual: false };
+        folhas[t] = { count: conf.folhas[t].count * qtd, baseCount: conf.folhas[t].count, larguraMm: 0, alturaMm: 0, manual: false };
     }
-    const item = { id: uid(), nome, qtd, vaoLarguraMm: 0, vaoAlturaMm: 0, folhas, puxador };
+    const item = { 
+        id: uid(), 
+        nome, 
+        qtd, 
+        vaoLarguraMm: 0, 
+        vaoAlturaMm: 0, 
+        folhas, 
+        puxador,
+        cor: coresVidro[0],
+        espessura: espessurasVidro[0]
+    };
     items.push(item);
     addRow(item);
-  
-    // aplicar componentes iniciais: updateItemComponents fará isso (recalcularFolhas chama updateItemComponents)
-    // mas chamamos explicitamente para garantir
     updateItemComponents(item);
-  });
+});
   
   document.getElementById('clearBtn').addEventListener('click', () => {
     if (confirm('Deseja limpar todas as peças?')) {
@@ -608,17 +633,11 @@ document.addEventListener('DOMContentLoaded', () => {
         n.parentNode.replaceChild(span, n);
       });
 
-      // converter selects usando opção selecionada (texto) ou value
+      // converter selects mantendo valores selecionados
       clone.querySelectorAll('select').forEach(s => {
         const span = document.createElement('span');
-        let val = '';
-        try {
-          const opt = s.options && s.selectedIndex >= 0 ? s.options[s.selectedIndex] : null;
-          val = opt ? (opt.textContent || opt.value) : (s.value || '');
-        } catch (e) {
-          val = s.value || s.textContent || '';
-        }
-        span.textContent = val;
+        const selectedOption = s.options[s.selectedIndex];
+        span.textContent = selectedOption ? selectedOption.textContent : '';
         s.parentNode.replaceChild(span, s);
       });
 
