@@ -34,7 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
       needsPuxador: false,
       bateItem: 'Kit10' // usa Kit10 em vez do 571-BateFecha
     },
-  
+
+    // Porta de correr 1 folha: apenas uma folha móvel com acréscimos específicos
+    "Porta de correr 1 folha": {
+      folhas: { "Móvel": { count: 1 } },
+      descontos: {},
+      special: 'porta1correr',
+      needsPuxador: false
+    },
+
     // Janela 4 folhas: 2 móveis + 2 fixas
     "Janela 4 folhas": {
       folhas: { "Móvel": { count: 2 }, "Fixa": { count: 2 } },
@@ -51,6 +59,15 @@ document.addEventListener('DOMContentLoaded', () => {
       special: 'janela4',
       needsPuxador: false,
       bateItem: 'Kit09'
+    },
+
+    // Peça Box: mesma lógica da porta de correr 2 folhas, mas utiliza KitBox
+    "Peça Box": {
+      folhas: { "Móvel": { count: 1 }, "Fixa": { count: 1 } },
+      descontos: {},
+      special: 'janela2',
+      needsPuxador: false,
+      bateItem: 'KitBox'
     },
   
     // Nova peça: Janela Maxim-ar com 1 folha fixa
@@ -117,6 +134,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tipo === 'Fixa') {
         // largura por folha = (vão / 4), altura = vão - 65
         return { largura: Math.max(0, (vaoL / 4)), altura: Math.max(0, vaoA - 65) };
+      }
+    }
+
+    if (conf.special === 'porta1correr') {
+      if (tipo === 'Móvel') {
+        return {
+          largura: Math.max(0, vaoL + 50),
+          altura: Math.max(0, vaoA + 40)
+        };
       }
     }
 
@@ -220,6 +246,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const conf = pecaConfig[it.nome];
       if (!conf) continue;
       
+      if (conf.special === 'porta1correr') {
+        const folhaMovel = it.folhas['Móvel'];
+        if (folhaMovel) {
+          const areaFolha = (folhaMovel.larguraMm/1000) * (folhaMovel.alturaMm/1000);
+          const qtd = parseInt(it.qtd) || 0;
+          total += (areaFolha * qtd) / 3.4;
+        }
+      }
+
       // incluir janela2, janela4 e maxiar
       if (conf.special === 'janela2' || conf.special === 'janela4' || conf.special === 'maxiar') {
         // para maxiar, usa apenas área da folha fixa
@@ -375,7 +410,26 @@ document.addEventListener('DOMContentLoaded', () => {
   
       return contribs;
     }
-  
+
+    if (conf.special === 'porta1correr') {
+      const folhaMovel = item.folhas['Móvel'] || {};
+      const larguraFolha = Math.max(0, folhaMovel.larguraMm != null ? folhaMovel.larguraMm : (vaoL + 50));
+      const alturaFolha = Math.max(0, folhaMovel.alturaMm != null ? folhaMovel.alturaMm : (vaoA + 40));
+
+      ['BX064','BX065','BX057'].forEach(n => {
+        contribs[n] = { qty: 0, usedMm: larguraFolha * 2 * qtd };
+      });
+
+      contribs['U1109'] = { qty: 0, usedMm: alturaFolha * qtd };
+      contribs['Kit10'] = { qty: 1 * qtd, usedMm: 0 };
+      contribs['125REG'] = { qty: 4 * qtd, usedMm: 0 };
+
+      const areaFolha = (larguraFolha/1000) * (alturaFolha/1000);
+      contribs['SILOC'] = { qty: 0, usedMm: 0, raw: (areaFolha * qtd) / 3.4 };
+
+      return contribs;
+    }
+
     // comportamento padrão (porta pivotante etc.)
     for (const comp of (conf.componentes || [])) {
       if (comp.name === 'Puxador') {
