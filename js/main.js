@@ -88,9 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   
   // tornar Incolor e 8mm os valores padrão (aparecem primeiro na lista)
-  const coresVidro = ["Incolor", "Bronze", "Verde"];
+  const coresVidro = ["Incolor", "Bronze", "Fume", "Verde"];
   const espessurasVidro = ["8mm", "4mm", "6mm", "10mm"];
   let items = [];
+  let customPieceCounter = 1;
   
   // additionalItems: map name -> { id, qty, usedMm, isBar }
   let additionalItems = {};
@@ -489,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // --- UI: criação de linhas de itens e sublinhas ---
   function addRow(item) {
+    const conf = pecaConfig[item.nome] || { folhas: {}, isCustom: item.isCustom };
     const main = document.createElement('tr');
     main.dataset.id = item.id;
     main.innerHTML = `<td>${item.nome}</td>
@@ -498,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <td><select>${coresVidro.map(c=>`<option>${c}</option>`).join('')}</select></td>
       <td><select>${espessurasVidro.map(e=>`<option>${e}</option>`).join('')}</select></td>
       <td class="area">0.000</td>
-      <td class="right"><button class="remove-btn">Remover</button></td>`;
+      <td class="right actions-cell"></td>`;
     tbody.appendChild(main);
   
     const inpQtd = main.querySelector('td:nth-child(2) input');
@@ -507,6 +509,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const areaCell = main.querySelector('.area');
     const selectCor = main.querySelector('td:nth-child(5) select');
     const selectEspessura = main.querySelector('td:nth-child(6) select');
+    const actionsCell = main.querySelector('.actions-cell');
+  
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-btn';
+    removeBtn.textContent = 'Remover';
+    actionsCell.appendChild(removeBtn);
+  
+    if (conf.isCustom || item.isCustom) {
+      const addSubBtn = document.createElement('button');
+      addSubBtn.type = 'button';
+      addSubBtn.className = 'add-sub-btn';
+      addSubBtn.textContent = 'Adicionar Sublinha';
+      actionsCell.insertBefore(addSubBtn, removeBtn);
+  
+      addSubBtn.addEventListener('click', () => {
+        const labelInput = prompt('Nome da sublinha personalizada:', `Sublinha ${Object.keys(item.folhas).length + 1}`);
+        const label = labelInput ? labelInput.trim() : '';
+        if (!label) return;
+        const key = uid();
+        item.folhas[key] = {
+          count: item.qtd,
+          baseCount: 1,
+          larguraMm: 0,
+          alturaMm: 0,
+          manual: true,
+          label
+        };
+        if (conf.folhas) {
+          conf.folhas[key] = { count: 1 };
+        }
+        appendSubRow(key);
+        atualizarSubLinhas();
+        updateItemComponents(item);
+      });
+    }
   
     // Guardar valores iniciais
     item.cor = item.cor || coresVidro[0];
@@ -527,9 +564,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function atualizarSubLinhas() {
       let totalAreaItem = 0;
       let cur = main.nextSibling;
-      while (cur && cur.classList.contains('subrow')) {
+      while (cur && cur.classList.contains('subrow') && cur.dataset.parentId === item.id) {
         const tipo = cur.dataset.tipo;
         const f = item.folhas[tipo];
+        if (!f) { cur = cur.nextSibling; continue; }
         const larg = arredondaCima50(f.larguraMm);
         const alt = arredondaCima50(f.alturaMm);
         const area = calculaAreaFolha(f.larguraMm, f.alturaMm, f.count);
@@ -538,9 +576,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cur.querySelector('.arred-alt').textContent = alt;
         cur.querySelector('.area').textContent = area.toFixed(3);
         const qtdTxt = f.count > 1 ? ` (x${f.count})` : '';
-        cur.querySelector('.folha-nome').textContent = `Folha ${tipo}${qtdTxt}`;
-        const inpW = cur.querySelector('td:nth-child(2) input');
-        const inpH = cur.querySelector('td:nth-child(3) input');
+        const displayName = f.label || `Folha ${tipo}`;
+        cur.querySelector('.folha-nome').textContent = `${displayName}${qtdTxt}`;
+        const inpW = cur.querySelector('.width-cell input');
+        const inpH = cur.querySelector('.height-cell input');
         if (inpW) inpW.value = f.larguraMm ?? '';
         if (inpH) inpH.value = f.alturaMm ?? '';
         cur = cur.nextSibling;
@@ -551,6 +590,20 @@ document.addEventListener('DOMContentLoaded', () => {
   
     function recalcularFolhas() {
       const conf = pecaConfig[item.nome];
+      if (!conf) {
+        atualizarSubLinhas();
+        updateItemComponents(item);
+        return;
+      }
+      if (conf.isCustom || item.isCustom) {
+        for (const tipo in item.folhas) {
+          const folha = item.folhas[tipo];
+          folha.count = (folha.baseCount || 1) * item.qtd;
+        }
+        atualizarSubLinhas();
+        updateItemComponents(item);
+        return;
+      }
       for (const tipo in conf.folhas) {
         if (!item.folhas[tipo].manual) {
           const dims = calculaFolhaComDesconto(item, tipo);
@@ -564,14 +617,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   
     inpQtd.addEventListener('input', () => {
-      const old = item.qtd || 0;
       const novo = parseInt(inpQtd.value) || 1;
-      const delta = novo - old;
       item.qtd = novo;
       const conf = pecaConfig[item.nome];
-      // atualizar contagens de folhas
-      for (const tipo in conf.folhas) {
-        item.folhas[tipo].count = conf.folhas[tipo].count * item.qtd;
+      if (conf && (conf.isCustom || item.isCustom)) {
+        for (const tipo in item.folhas) {
+          const folha = item.folhas[tipo];
+          folha.count = (folha.baseCount || 1) * item.qtd;
+        }
+      } else if (conf) {
+        for (const tipo in conf.folhas) {
+          item.folhas[tipo].count = conf.folhas[tipo].count * item.qtd;
+        }
       }
       // se peça tem componentes simples (ex: porta) a mudança de qtd vai ajustar via updateItemComponents
       recalcularFolhas();
@@ -587,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
       recalcularFolhas();
     });
   
-    main.querySelector('.remove-btn').addEventListener('click', () => {
+    removeBtn.addEventListener('click', () => {
       items = items.filter(x => x.id !== item.id);
       // decrementar componentes associados ao item (usar item.componentContribs)
       const old = item.componentContribs || {};
@@ -597,29 +654,46 @@ document.addEventListener('DOMContentLoaded', () => {
         addOrUpdateAdditionalItem(name, - (o.qty || 0), - (o.usedMm || 0), - (o.raw || 0));
       }
       let n = main.nextSibling;
-      while (n && n.classList.contains('subrow')) { let t = n.nextSibling; n.remove(); n = t; }
+      while (n && n.classList.contains('subrow') && n.dataset.parentId === item.id) { let t = n.nextSibling; n.remove(); n = t; }
       main.remove(); updateTotals();
     });
   
     // cria sublinhas
-    for (const tipo in item.folhas) {
+    function appendSubRow(tipo) {
       const f = item.folhas[tipo];
+      if (!f) return;
+      if (!f.label && !(conf.isCustom || item.isCustom)) {
+        f.label = `Folha ${tipo}`;
+      }
       const sub = document.createElement('tr');
       sub.className = 'subrow';
       sub.dataset.tipo = tipo;
-      sub.innerHTML = `<td colspan="2" class="folha-nome">Folha ${tipo}${f.count>1?` (x${f.count})`:''}</td>
-        <td><input type="number" min="0" value="${f.larguraMm||''}"></td>
-        <td><input type="number" min="0" value="${f.alturaMm||''}"></td>
+      sub.dataset.parentId = item.id;
+      sub.innerHTML = `<td colspan="2" class="folha-nome"></td>
+        <td class="width-cell"><input type="number" min="0" value="${f.larguraMm||''}"></td>
+        <td class="height-cell"><input type="number" min="0" value="${f.alturaMm||''}"></td>
         <td class="arred-larg"></td>
         <td class="arred-alt"></td>
         <td class="area">0.000</td>
         <td></td>`;
-      tbody.appendChild(sub);
+      let ref = main.nextSibling;
+      while (ref && ref.classList.contains('subrow') && ref.dataset.parentId === item.id) {
+        ref = ref.nextSibling;
+      }
+      if (ref) {
+        tbody.insertBefore(sub, ref);
+      } else {
+        tbody.appendChild(sub);
+      }
   
-      const inpW = sub.querySelector('td:nth-child(2) input');
-      const inpH = sub.querySelector('td:nth-child(3) input');
+      const inpW = sub.querySelector('.width-cell input');
+      const inpH = sub.querySelector('.height-cell input');
       if (inpW) inpW.addEventListener('input', () => { f.larguraMm = parseFloat(inpW.value) || 0; f.manual = true; atualizarSubLinhas(); });
       if (inpH) inpH.addEventListener('input', () => { f.alturaMm = parseFloat(inpH.value) || 0; f.manual = true; atualizarSubLinhas(); });
+    }
+  
+    for (const tipo in item.folhas) {
+      appendSubRow(tipo);
     }
   
     // inicializa contribuições do item (vazia) e calcula pela primeira vez
@@ -666,6 +740,53 @@ document.addEventListener('DOMContentLoaded', () => {
     addRow(item);
     updateItemComponents(item);
 });
+
+  const customNameInput = document.getElementById('customPieceName');
+  const addCustomPieceBtn = document.getElementById('addCustomPieceBtn');
+  if (addCustomPieceBtn) {
+    addCustomPieceBtn.addEventListener('click', () => {
+      const typed = customNameInput ? customNameInput.value.trim() : '';
+      let nome = typed;
+      if (!nome) {
+        do {
+          nome = `Peça personalizada ${customPieceCounter++}`;
+        } while (pecaConfig[nome]);
+      } else if (pecaConfig[nome] && !pecaConfig[nome].isCustom) {
+        alert('Já existe uma peça com esse nome. Escolha outro nome.');
+        return;
+      }
+
+      if (!pecaConfig[nome]) {
+        pecaConfig[nome] = {
+          folhas: {},
+          descontos: {},
+          needsPuxador: false,
+          isCustom: true
+        };
+      }
+
+      const qtd = parseInt(document.getElementById('qtdDefault').value) || 1;
+      const item = {
+        id: uid(),
+        nome,
+        qtd,
+        vaoLarguraMm: 0,
+        vaoAlturaMm: 0,
+        folhas: {},
+        puxador: '',
+        cor: coresVidro[0],
+        espessura: espessurasVidro[0],
+        isCustom: true
+      };
+
+      items.push(item);
+      addRow(item);
+      updateItemComponents(item);
+      if (customNameInput) {
+        customNameInput.value = '';
+      }
+    });
+  }
   
   document.getElementById('clearBtn').addEventListener('click', () => {
     if (confirm('Deseja limpar todas as peças?')) {
@@ -725,7 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // remover controles interativos (mantém selects/inputs das linhas)
-      clone.querySelectorAll('.controls, .form-group, #addBtn, #clearBtn, #addAdditionalItemBtn, #exportPdfBtn').forEach(n => n.remove());
+      clone.querySelectorAll('.controls, .primary-actions, .form-group, #addBtn, #clearBtn, #addAdditionalItemBtn, #exportPdfBtn, #addCustomPieceBtn, #customPieceName').forEach(n => n.remove());
 
       // converter inputs em spans (garante pegar value atual)
       clone.querySelectorAll('input').forEach(n => {

@@ -5,6 +5,8 @@ h1 { color: #0b63d6; margin-top: 0; }
 select, input[type="number"], button { padding: 10px 12px; border-radius: 8px; border: 1px solid #d0d7de; font-size: 14px; }
 button { background: #0b63d6; color: white; border: none; cursor: pointer; }
 button.ghost { background: transparent; color: #0b63d6; border: 1px solid #0b63d6; }
+.primary-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px; }
+.primary-actions input[type="text"] { padding: 10px 12px; border-radius: 8px; border: 1px solid #d0d7de; font-size: 14px; min-width: 220px; }
 table { width: 100%; border-collapse: collapse; margin-top: 18px; }
 th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eee; font-size: 14px; }
 th { color: #555; font-weight: 600; }
@@ -15,7 +17,14 @@ th { color: #555; font-weight: 600; }
 .arred-info { color: #888; font-size: 12px; text-align: center; }
 input[type="number"] { width: 80px; }
 .remove-btn { background: #ef4444; padding: 6px 10px; border-radius: 6px; color: white; border: none; cursor: pointer; }
-@media (max-width: 700px) { .controls { flex-direction: column; align-items: stretch; } }
+.actions-cell { display: flex; justify-content: flex-end; gap: 8px; }
+.add-sub-btn { background: #10b981; border-radius: 6px; padding: 6px 10px; color: #fff; border: none; cursor: pointer; }
+@media (max-width: 700px) {
+  .controls { flex-direction: column; align-items: stretch; }
+  .primary-actions { flex-direction: column; align-items: stretch; }
+  .primary-actions input[type="text"] { min-width: 0; width: 100%; }
+  .actions-cell { flex-direction: column; align-items: stretch; }
+}
 @media print {
   .controls, button, .remove-btn { display: none !important; }
   .card { box-shadow: none; border-radius: 0; background: #fff; }
